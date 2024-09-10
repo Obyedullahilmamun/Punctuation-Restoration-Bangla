@@ -8,7 +8,7 @@ Punctuation restoration is the process of adding missing punctuation marks to te
 The Bangla datasets can be found in the data/bn directory.
 
 ## Model Architecture
-We fine-tune a Transformer-based model (like BERT) for punctuation restoration. It uses a Transformer encoder, followed by a bidirectional LSTM and a linear layer to predict punctuation at each position in the text.
+We implement a pretrained Transformer-based model (such as BERT) for punctuation restoration. The model includes a Transformer encoder, followed by a bidirectional LSTM and a linear layer to predict punctuation at each position in the text.
 ![model_architecture](https://github.com/user-attachments/assets/1e9f9f65-94b6-49a8-8578-1d4b501a736d)
 
 #### Bangla Supported Models
