@@ -11,6 +11,16 @@ The Bangla datasets can be found in the data/bn directory.
 We implement a pretrained Transformer-based model (such as BERT) for punctuation restoration. The model includes a Transformer encoder, followed by a bidirectional LSTM and a linear layer to predict punctuation at each position in the text.
 ![model_architecture](https://github.com/user-attachments/assets/1e9f9f65-94b6-49a8-8578-1d4b501a736d)
 
+## Experiment Settings
+We evaluated the performance of the XLM-RoBERTa-large model under different training setups:
+
+| Setup Type              | Description                                     | Repository (Link)                                                                                     |
+|-------------------------|-------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| No Augmentation         | Trained only on original Bangla dataset         | [View here](https://github.com/Obyedullahilmamun/Punctuation-Restoration-Bangla-Without-Augmentation) |
+| Augmentation (α = 0.10) | Low-intensity noise injection during training   | [View here](https://github.com/Obyedullahilmamun/Punctuation-Restoration-Bangla-Aug-Exp-1)            |
+| Augmentation (α = 0.15) | Medium-intensity augmentation [this repository] | [View here](https://github.com/Obyedullahilmamun/Punctuation-Restoration-Bangla)                      |
+| Augmentation (α = 0.20) | High-intensity augmentation (final model)       | [View here](https://github.com/Obyedullahilmamun/Punctuation-Restoration-Bangla-Aug-Exp-2)            |
+
 #### Bangla Supported Models
 ```
 bert-base-multilingual-cased
