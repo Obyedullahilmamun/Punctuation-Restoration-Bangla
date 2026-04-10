@@ -29,6 +29,10 @@ def parse_arguments():
     parser.add_argument('--batch-size', default=8, type=int, help='batch size (default: 8)')
     parser.add_argument('--epoch', default=10, type=int, help='total epochs (default: 10)')
     parser.add_argument('--save-path', default='out/', type=str, help='model and log save directory')
+    parser.add_argument('--loss-type', default='ce', type=str, choices=['ce', 'focal', 'weighted-ce'],
+                        help='loss function: ce (cross-entropy), focal (Focal Loss), weighted-ce (class-weighted CE)')
+    parser.add_argument('--focal-gamma', default=2.0, type=float,
+                        help='focusing parameter gamma for Focal Loss (default: 2.0)')
 
     args = parser.parse_args()
     return args

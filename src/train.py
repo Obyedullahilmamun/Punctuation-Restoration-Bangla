@@ -11,6 +11,7 @@ from dataset import Dataset
 from model import DeepPunctuation, DeepPunctuationCRF
 from config import *
 import augmentation
+from losses import FocalLoss, compute_class_weights
 
 torch.multiprocessing.set_sharing_strategy('file_system')   # https://github.com/pytorch/pytorch/issues/11201
 
@@ -99,7 +100,17 @@ if args.use_crf:
 else:
     deep_punctuation = DeepPunctuation(args.pretrained_model, freeze_bert=args.freeze_bert, lstm_dim=args.lstm_dim)
 deep_punctuation.to(device)
-criterion = nn.CrossEntropyLoss()
+# Loss function selection based on --loss-type argument
+if args.loss_type == 'focal':
+    print(f"Using Focal Loss (gamma={args.focal_gamma}) to mitigate class imbalance...")
+    criterion = FocalLoss(gamma=args.focal_gamma)
+elif args.loss_type == 'weighted-ce':
+    print("Using class-weighted Cross Entropy Loss...")
+    class_weights = compute_class_weights(train_set, num_classes=len(punctuation_dict), device=device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
+else:
+    print("Using standard Cross Entropy Loss...")
+    criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(deep_punctuation.parameters(), lr=args.lr, weight_decay=args.decay)
 
 
@@ -142,10 +153,10 @@ def test(data_loader):
     num_iteration = 0
     deep_punctuation.eval()
     # +1 for overall result
-    tp = np.zeros(1+len(punctuation_dict), dtype=np.int)
-    fp = np.zeros(1+len(punctuation_dict), dtype=np.int)
-    fn = np.zeros(1+len(punctuation_dict), dtype=np.int)
-    cm = np.zeros((len(punctuation_dict), len(punctuation_dict)), dtype=np.int)
+    tp = np.zeros(1+len(punctuation_dict), dtype=np.int64)
+    fp = np.zeros(1+len(punctuation_dict), dtype=np.int64)
+    fn = np.zeros(1+len(punctuation_dict), dtype=np.int64)
+    cm = np.zeros((len(punctuation_dict), len(punctuation_dict)), dtype=np.int64)
     correct = 0
     total = 0
     with torch.no_grad():
@@ -246,7 +257,7 @@ def train():
             torch.save(deep_punctuation.state_dict(), model_save_path)
 
     print('Best validation Acc:', best_val_acc)
-    deep_punctuation.load_state_dict(torch.load(model_save_path))
+    deep_punctuation.load_state_dict(torch.load(model_save_path, weights_only=True))
     for loader in test_loaders:
         precision, recall, f1, accuracy, cm = test(loader)
         log = 'Precision: ' + str(precision) + '\n' + 'Recall: ' + str(recall) + '\n' + 'F1 score: ' + str(f1) + \
