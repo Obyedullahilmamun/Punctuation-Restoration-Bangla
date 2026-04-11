@@ -1,4 +1,6 @@
 import os
+import time
+import sys
 import torch
 import torch.nn as nn
 import numpy as np
@@ -205,13 +207,17 @@ def train():
     with open(log_path, 'a') as f:
         f.write(str(args)+'\n')
     best_val_acc = 0
+    total_start = time.time()
     for epoch in range(args.epoch):
+        epoch_start = time.time()
         train_loss = 0.0
         train_iteration = 0
         correct = 0
         total = 0
         deep_punctuation.train()
-        for x, y, att, y_mask in tqdm(train_loader, desc='train'):
+        num_batches = len(train_loader)
+        print(f'\n=== EPOCH {epoch+1}/{args.epoch} — {num_batches} batches ===' , flush=True)
+        for batch_idx, (x, y, att, y_mask) in enumerate(train_loader):
             x, y, att, y_mask = x.to(device), y.to(device), att.to(device), y_mask.to(device)
             y_mask = y_mask.view(-1)
             if args.use_crf:
@@ -241,28 +247,37 @@ def train():
 
             total += torch.sum(y_mask).item()
 
+            # Print progress every 100 batches (works in papermill)
+            if (batch_idx + 1) % 100 == 0 or (batch_idx + 1) == num_batches:
+                elapsed = time.time() - epoch_start
+                eta = elapsed / (batch_idx + 1) * (num_batches - batch_idx - 1)
+                print(f'  batch {batch_idx+1}/{num_batches} | loss={train_loss/train_iteration:.4f} | elapsed={elapsed:.0f}s | ETA={eta:.0f}s', flush=True)
+
+        epoch_time = time.time() - epoch_start
         train_loss /= train_iteration
-        log = 'epoch: {}, Train loss: {}, Train accuracy: {}'.format(epoch, train_loss, correct / total)
+        log = 'epoch: {}, Train loss: {}, Train accuracy: {}, Time: {:.0f}s'.format(epoch, train_loss, correct / total, epoch_time)
         with open(log_path, 'a') as f:
             f.write(log + '\n')
-        print(log)
+        print(log, flush=True)
 
         val_acc, val_loss = validate(val_loader)
         log = 'epoch: {}, Val loss: {}, Val accuracy: {}'.format(epoch, val_loss, val_acc)
         with open(log_path, 'a') as f:
             f.write(log + '\n')
-        print(log)
+        print(log, flush=True)
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(deep_punctuation.state_dict(), model_save_path)
 
-    print('Best validation Acc:', best_val_acc)
+    total_time = time.time() - total_start
+    print(f'\nTraining complete in {total_time:.0f}s ({total_time/60:.1f} min)', flush=True)
+    print('Best validation Acc:', best_val_acc, flush=True)
     deep_punctuation.load_state_dict(torch.load(model_save_path, weights_only=True))
     for loader in test_loaders:
         precision, recall, f1, accuracy, cm = test(loader)
         log = 'Precision: ' + str(precision) + '\n' + 'Recall: ' + str(recall) + '\n' + 'F1 score: ' + str(f1) + \
               '\n' + 'Accuracy:' + str(accuracy) + '\n' + 'Confusion Matrix' + str(cm) + '\n'
-        print(log)
+        print(log, flush=True)
         with open(log_path, 'a') as f:
             f.write(log)
         log_text = ''
